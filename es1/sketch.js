@@ -1,8 +1,8 @@
 // Illusione: tunnel a scacchi (conosciuta anche come vortice a scacchiera, tunnel a spirale o griglia concentrica)
 // Fonte: https://www.istockphoto.com/it/vettoriale/sfondo-a-scacchi-astratto-effetto-illusione-ottica-gm1257195476-368352039
 // Regola (consigliata): L'immagine è composta da una griglia polare o cilindrica (anelli concentrici e raggi convergenti) in cui le celle alterne vengono colorate di nero e bianco (scacchiera). La deformazione prospettica e la curvatura a "ciambella" (toro) si ottengono mappando le coordinate cartesiane o polari su una funzione matematica che distorce la spaziatura delle celle, stringendole al centro e dilatandole verso i bordi.
-// Parametri critici: numCols, numRows, curvature
-//   numCols: 32 (settori per anello), numRows: 16 (anelli concentrici), curvature: 0.6 (deformazione verso i bordi)
+// Parametri critici: curvature, numCols, numRows
+//   effetto più evidente con curvature = 0.6 (numCols = 32, numRows = 16), nessun effetto con curvature = 0
 
 // misure della tela (risoluzione di riferimento delle specifiche)
 let larghezzaTela = 800
@@ -22,6 +22,9 @@ let inclinazione = 1.0
 // maggiore = più incurvato (effetto tunnel/toro visto dall'interno)
 let curvature = 0.6
 
+// durata di un'oscillazione completa, in frame: più è alta, più il movimento è lento
+let durataOscillazione = 300
+
 function setup() {
   createCanvas(larghezzaTela, altezzaTela)
   noStroke()
@@ -37,10 +40,10 @@ function draw() {
   // distanza massima dal centro per occupare tutto lo spazio (fino agli angoli)
   let R_max = sqrt((width / 2) * (width / 2) + (height / 2) * (height / 2))
 
-  // angolo di rotazione continua basato su frameCount
-  let angleRot = frameCount / 80.0
-
-  // Movimento applicato ai parametri critici (angolo di ogni settore)
+  // movimento: alternanza fra effetto presente e assente
+  // la curvatura oscilla con sin(frameCount) fra 0 (griglia piatta) e il valore massimo
+  let fase = sin(TWO_PI * frameCount / durataOscillazione)
+  let curvaturaAttuale = curvature * (fase + 1) / 2
 
   // un anello per volta, un settore per volta:
   // ogni cella è un quadrilatero fra due raggi e due angoli vicini
@@ -48,7 +51,7 @@ function draw() {
     let t0 = i / numRows                // 0 al buco centrale, 1 ai bordi
     let t1 = (i + 1) / numRows
     // mappatura non lineare: curva l'espansione verso i bordi
-    let p = 1 + curvature
+    let p = 1 + curvaturaAttuale
     let r0 = raggioInterno + (R_max - raggioInterno) * pow(t0, p)
     let r1 = raggioInterno + (R_max - raggioInterno) * pow(t1, p)
 
@@ -59,7 +62,7 @@ function draw() {
         fill(255)
       }
 
-      let a0 = j * angolo + angleRot
+      let a0 = j * angolo
       let a1 = a0 + angolo
 
       // quattro vertici, applicando inclinazione (in verticale)
