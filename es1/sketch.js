@@ -2,7 +2,7 @@
 // Fonte: https://www.istockphoto.com/it/vettoriale/sfondo-a-scacchi-astratto-effetto-illusione-ottica-gm1257195476-368352039
 // Regola (consigliata): L'immagine è composta da una griglia polare o cilindrica (anelli concentrici e raggi convergenti) in cui le celle alterne vengono colorate di nero e bianco (scacchiera). La deformazione prospettica e la curvatura a "ciambella" (toro) si ottengono mappando le coordinate cartesiane o polari su una funzione matematica che distorce la spaziatura delle celle, stringendole al centro e dilatandole verso i bordi.
 // Parametri critici: curvature, numCols, numRows
-//   effetto più evidente con curvature = 0.6 (numCols = 32, numRows = 16), nessun effetto con curvature = 0
+// Effetto più evidente con curvature = 0.6 (numCols = 32, numRows = 16), nessun effetto con curvature = 0
 
 // misure della tela (risoluzione di riferimento delle specifiche)
 let larghezzaTela = 800
