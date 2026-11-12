@@ -11,19 +11,62 @@
 // - anteprima preview.png con una variante rappresentativa
 // - commento iniziale con autore, titolo, anno e fonte del quadro scelto
 
-// Quadro: WAZR Studio, "Pastel Construction IV", 2026 (anno di pubblicazione sulla fonte).
+// Quadro: WAZR Studio, "Pastel Construction IV", 2026
 // Fonte: https://artesta.it/products/quadro-geometrico-blocchi-colore
-// Regola cromatica: blocchi a contrasto e bilanciamento, con toni caldi e freddi alternati.
+// Regola cromatica: sei campi piatti su fondo bianco. Caldi: rosso (HSL 5/69/46)
+//   e rosa chiaro (14/79/87); freddi: blu profondo (214/88/16), azzurro (209/43/63),
+//   verde medio (147/23/38) e verde scuro (149/66/9). I caldi sono più saturi e chiari;
+//   i blu e i verdi scuri sono più profondi, con l'azzurro come passaggio chiaro.
+//   Il rosa occupa il centro, il blu e il rosso i campi ampi, il verde medio il campo
+//   basso e il verde scuro la fascia superiore. Le variazioni scelgono insieme tinta,
+//   saturazione e luminosità da questa palette (S 23-88%, L 9-87%); il pannello
+//   di fondo resta chiaro e desaturato (S 0-20%, L 80-90%).
 
-// misure della tela: il quadro è verticale, quindi uso 600x800
+// misure della tela
 let larghezzaTela = 600
-let altezzaTela = 800
+let altezzaTela = 600
+
+// riduco proporzionalmente la composizione dentro un'area di 550x550
+let larghezzaSpazio = 550
+let altezzaSpazio = 550
+let larghezzaComposizione = 600
+let altezzaComposizione = 800
+let scalaComposizione = Math.min(larghezzaSpazio / larghezzaComposizione, altezzaSpazio / altezzaComposizione)
+let margineSinistro = (larghezzaTela - larghezzaComposizione * scalaComposizione) / 2
+let margineSuperiore = (altezzaTela - altezzaComposizione * scalaComposizione) / 2
+let sovrapposizioneBordi = 2
 
 // colore di sfondo, in HSL: tono, saturazione, luminosità
-let coloreSfondo = { tinta: 40, saturazione: 27, luminosita: 98 }
+let coloreSfondo = { tinta: 0, saturazione: 0, luminosita: 98 }
+let rettangoloGrigio = {
+  x: 90, y: 23, larghezza: 404, altezza: 573,
+  tinta: 0, saturazione: 0, luminosita: 85
+}
+let tintaBaseRettangoloGrigio = rettangoloGrigio.tinta
+let saturazioneBaseRettangoloGrigio = rettangoloGrigio.saturazione
+let luminositaBaseRettangoloGrigio = rettangoloGrigio.luminosita
 
-// toni ammessi per le variazioni dei rettangoli
-let tintePalette = [5, 14, 40, 147, 149, 209, 214]
+// colori ammessi per le variazioni: tinta, saturazione e luminosità
+// vengono scelti insieme, così ogni variazione resta nella palette del quadro
+let paletteColori = [
+  { tinta: 5, saturazione: 69, luminosita: 46 },   // rosso
+  { tinta: 14, saturazione: 79, luminosita: 87 },  // rosa
+  { tinta: 147, saturazione: 23, luminosita: 38 }, // verde
+  { tinta: 149, saturazione: 66, luminosita: 9 },  // verde scuro
+  { tinta: 209, saturazione: 43, luminosita: 63 }, // azzurro
+  { tinta: 214, saturazione: 88, luminosita: 16 }  // blu
+]
+
+// il pannello resta chiaro: varia solo fra versioni desaturate della palette
+let palettePannello = [
+  { tinta: 0, saturazione: 0, luminosita: 85 },    // grigio
+  { tinta: 5, saturazione: 18, luminosita: 87 },   // grigio rosato
+  { tinta: 14, saturazione: 20, luminosita: 90 },  // grigio rosa
+  { tinta: 147, saturazione: 14, luminosita: 82 }, // grigio verde
+  { tinta: 149, saturazione: 16, luminosita: 80 }, // grigio verde scuro
+  { tinta: 209, saturazione: 16, luminosita: 84 }, // grigio azzurro
+  { tinta: 214, saturazione: 18, luminosita: 80 }  // grigio blu
+]
 
 // colori ammessi per il blu: restano nella palette del quadro
 let paletteBlu = [
@@ -35,44 +78,69 @@ let paletteBlu = [
 
 // rettangoli dal fondo verso il davanti
 let rettangoli = [
-  { nome: "verde scuro", tinta: 149, saturazione: 66, luminosita: 9, x: 318, y: 0, larghezza: 262, altezza: 43},
+  { nome: "verde scuro", tinta: 149, saturazione: 66, luminosita: 9, x: 319, y: 0, larghezza: 261, altezza: 43},
   { nome: "rosso", tinta: 5, saturazione: 69, luminosita: 46, x: 318, y: 43, larghezza: 262, altezza: 367 },
-  { nome: "blu", tinta: 214, saturazione: 88, luminosita: 16, x: 19, y: 43, larghezza: 299, altezza: 249 },
-  { nome: "azzurro", tinta: 209, saturazione: 43, luminosita: 63, x: 19, y: 292, larghezza: 119, altezza: 183 },
-  { nome: "verde", tinta: 147, saturazione: 23, luminosita: 38, x: 197, y: 409, larghezza: 358, altezza: 391 },
+  { nome: "blu", tinta: 214, saturazione: 88, luminosita: 16, x: 19, y: 43, larghezza: 296, altezza: 249 },
+  { nome: "azzurro", tinta: 209, saturazione: 43, luminosita: 63, x: 19, y: 296, larghezza: 119, altezza: 183 },
+  { nome: "verde", tinta: 147, saturazione: 23, luminosita: 38, x: 197, y: 413, larghezza: 358, altezza: 391 },
   { nome: "rosa", tinta: 14, saturazione: 79, luminosita: 87, x: 138, y: 252, larghezza: 263, altezza: 332 }
 ]
 
-// conservo i valori iniziali per il reset
+let limiteSinistroRettangoli = Math.min(...rettangoli.map((r) => r.x))
+let limiteDestroRettangoli = Math.max(...rettangoli.map((r) => r.x + r.larghezza))
+let limiteSuperioreRettangoli = Math.min(...rettangoli.map((r) => r.y))
+let limiteInferioreRettangoli = Math.max(...rettangoli.map((r) => r.y + r.altezza))
+let centroComposizioneX = margineSinistro + (limiteSinistroRettangoli + limiteDestroRettangoli) / 2 * scalaComposizione
+let centroComposizioneY = margineSuperiore + (limiteSuperioreRettangoli + limiteInferioreRettangoli) / 2 * scalaComposizione
+
+// conservo i valori iniziali per il reset e per il controllo dei clic
 for (const r of rettangoli) {
   r.tintaBase = r.tinta
   r.saturazioneBase = r.saturazione
   r.luminositaBase = r.luminosita
+  r.scalaXCorrente = 1
+  r.scalaYCorrente = 1
+  r.rotazioneCorrente = 0
+  r.spostamentoXCorrente = 0
+  r.spostamentoYCorrente = 0
 }
 
 let rettBlu = rettangoli.find((r) => r.nome === "blu")
 let rettRosso = rettangoli.find((r) => r.nome === "rosso")
+let rettAzzurro = rettangoli.find((r) => r.nome === "azzurro")
+let rettRosa = rettangoli.find((r) => r.nome === "rosa")
 
 // durata e ampiezza delle animazioni
 let durataRosa = 7000
-let scalaMassimaRosa = 2.6
+let pausaRosa = 2000
+let durataFaseRosa = durataRosa / 2
+let durataRiduzioneFinaleRosa = durataFaseRosa
+let scalaMassimaRosaX = larghezzaTela / (rettRosa.larghezza * scalaComposizione)
+let scalaMassimaRosaY = altezzaTela / (rettRosa.altezza * scalaComposizione)
 let durataAzzurro = 5000
+let intervalloColoreAzzurro = 1500
 let durataVerde = 7000
-let ampiezzaVerde = 0.35
+let pausaVerde = 2000
+let durataFaseVerde = durataVerde / 2
+let scalaMassimaVerdeX = larghezzaTela / ((limiteDestroRettangoli - limiteSinistroRettangoli + 2 * sovrapposizioneBordi) * scalaComposizione)
+let scalaMassimaVerdeY = altezzaTela / ((limiteInferioreRettangoli - limiteSuperioreRettangoli + 2 * sovrapposizioneBordi) * scalaComposizione)
 let intervalloToni = 500
 let ampiezzaRosso = 18
 let periodoRosso = 10000
+let luminositaMinima = 9
+let luminositaMassima = 87
 
 // stato delle animazioni
 let inizioRosa = -1
 let rosaVisibile = true
-let scalaRosa = 1
+let progressoRosa = 0
+let scalaRosaFinale = 1
 let inizioAzzurro = -1
 let rotazioneAzzurro = 0
+let ultimoCambioColoreAzzurro = 0
 let inizioVerde = -1
-let scalaVerde = 1
+let progressoVerde = 0
 let ultimoCambioToni = 0
-let formaPrecedente = ""
 
 function setup() {
   createCanvas(larghezzaTela, altezzaTela)
@@ -83,17 +151,41 @@ function setup() {
 function draw() {
   background(coloreSfondo.tinta, coloreSfondo.saturazione, coloreSfondo.luminosita)
 
-  gestisciHover()
   aggiornaAnimazioni()
 
-  // la luminosità del rosso parte dal massimo e scende ogni 5 s
-  let luceRosso = rettRosso.luminosita + ampiezzaRosso * cos(TWO_PI * millis() / periodoRosso)
+  const progressoPannello = progressoVerde
+  fill(rettangoloGrigio.tinta, rettangoloGrigio.saturazione, rettangoloGrigio.luminosita)
+  rect(
+    rettangoloGrigio.x * (1 - progressoPannello),
+    rettangoloGrigio.y * (1 - progressoPannello),
+    rettangoloGrigio.larghezza + (larghezzaTela - rettangoloGrigio.larghezza) * progressoPannello,
+    rettangoloGrigio.altezza + (altezzaTela - rettangoloGrigio.altezza) * progressoPannello
+  )
+
+  // la luminosità del rosso oscilla intorno al valore scelto, senza uscire dalla palette
+  let luceRosso = constrain(
+    rettRosso.luminosita + ampiezzaRosso * cos(TWO_PI * millis() / periodoRosso),
+    luminositaMinima,
+    luminositaMassima
+  )
+  let scalaVerdeX = 1 + (scalaMassimaVerdeX - 1) * progressoVerde
+  let scalaVerdeY = 1 + (scalaMassimaVerdeY - 1) * progressoVerde
 
   for (const r of rettangoli) {
     if (r.nome === "rosa" && !rosaVisibile) continue
 
-    let scala = scalaVerde
-    if (r.nome === "rosa") scala *= scalaRosa
+    let scalaX = scalaVerdeX
+    let scalaY = scalaVerdeY
+    const centroX = margineSinistro + (r.x + r.larghezza / 2) * scalaComposizione
+    const centroY = margineSuperiore + (r.y + r.altezza / 2) * scalaComposizione
+    let spostamentoX = (larghezzaTela / 2 - centroComposizioneX) * progressoVerde + (centroX - centroComposizioneX) * (scalaVerdeX - 1)
+    let spostamentoY = (altezzaTela / 2 - centroComposizioneY) * progressoVerde + (centroY - centroComposizioneY) * (scalaVerdeY - 1)
+    if (r.nome === "rosa") {
+      scalaX *= (1 + (scalaMassimaRosaX - 1) * progressoRosa) * scalaRosaFinale
+      scalaY *= (1 + (scalaMassimaRosaY - 1) * progressoRosa) * scalaRosaFinale
+      spostamentoX += (larghezzaTela / 2 - centroX) * progressoRosa
+      spostamentoY += (altezzaTela / 2 - centroY) * progressoRosa
+    }
 
     let rotazione = 0
     if (r.nome === "azzurro") rotazione = rotazioneAzzurro
@@ -101,45 +193,54 @@ function draw() {
     let luce = r.luminosita
     if (r.nome === "rosso") luce = luceRosso
 
-    disegnaRettangolo(r, scala, rotazione, luce)
+    // conservo la trasformazione usata per disegnare, così il clic può
+    // essere riportato nella stessa geometria
+    r.scalaXCorrente = scalaX
+    r.scalaYCorrente = scalaY
+    r.rotazioneCorrente = rotazione
+    r.spostamentoXCorrente = spostamentoX
+    r.spostamentoYCorrente = spostamentoY
+
+    disegnaRettangolo(r, scalaX, scalaY, rotazione, luce, spostamentoX, spostamentoY)
   }
 }
 
-function disegnaRettangolo(r, scala, rotazione, luce) {
+function disegnaRettangolo(r, scalaX, scalaY, rotazione, luce, spostamentoX, spostamentoY) {
   push()
-  translate(r.x + r.larghezza / 2, r.y + r.altezza / 2)
+  // centro il quadro ridotto nella tela
+  translate(margineSinistro + (r.x + r.larghezza / 2) * scalaComposizione + spostamentoX, margineSuperiore + (r.y + r.altezza / 2) * scalaComposizione + spostamentoY)
   if (rotazione !== 0) rotate(radians(rotazione))
-  scale(scala)
+  scale(scalaComposizione * scalaX, scalaComposizione * scalaY)
   fill(r.tinta, r.saturazione, luce)
-  rect(-r.larghezza / 2, -r.altezza / 2, r.larghezza, r.altezza)
+  rect(
+    -r.larghezza / 2 - sovrapposizioneBordi,
+    -r.altezza / 2 - sovrapposizioneBordi,
+    r.larghezza + sovrapposizioneBordi * 2,
+    r.altezza + sovrapposizioneBordi * 2
+  )
   pop()
 }
 
-function gestisciHover() {
-  const forma = formaSottoIlMouse()
-
-  if (forma === "blu" && formaPrecedente !== "blu") {
-    cambiaColoreBlu()
-  }
-
-  if (forma === "azzurro" && formaPrecedente !== "azzurro" && !animazioneInCorso()) {
-    inizioAzzurro = millis()
-    rotazioneAzzurro = 0
-  }
-
-  formaPrecedente = forma
-}
-
 function mousePressed() {
-  // il verde scuro ora è coperto dal rosso: il reset resta sul blocco rosso
   const formaPremuta = formaSottoIlMouse()
-  if (formaPremuta === "rosso" || formaPremuta === "verde scuro") {
+  if (formaPremuta === "verde scuro") {
     resetta()
+    return
+  }
+
+  if (formaPremuta === "blu") {
+    cambiaColoreBlu()
     return
   }
 
   if (animazioneInCorso()) return
 
+  if (formaPremuta === "azzurro") {
+    inizioAzzurro = millis()
+    rotazioneAzzurro = 0
+    cambiaColoreAzzurro()
+    ultimoCambioColoreAzzurro = millis()
+  }
   if (formaPremuta === "rosa") avviaRosa()
   if (formaPremuta === "verde") avviaVerde()
 }
@@ -147,26 +248,43 @@ function mousePressed() {
 function avviaRosa() {
   inizioRosa = millis()
   rosaVisibile = true
-  scalaRosa = 1
+  progressoRosa = 0
+  scalaRosaFinale = 1
 }
 
 function avviaVerde() {
   inizioVerde = millis()
-  scalaVerde = 1
+  progressoVerde = 0
   ultimoCambioToni = millis()
   cambiaToni()
 }
 
 function aggiornaAnimazioni() {
   if (inizioRosa >= 0) {
-    const p = (millis() - inizioRosa) / durataRosa
-    if (p >= 1) {
+    const trascorso = millis() - inizioRosa
+    const inizioRitiro = durataFaseRosa + pausaRosa
+    const fineRitiro = inizioRitiro + durataFaseRosa
+    if (trascorso >= fineRitiro + durataRiduzioneFinaleRosa) {
       inizioRosa = -1
       rosaVisibile = false
-      scalaRosa = 0
-    } else {
+      progressoRosa = 0
+      scalaRosaFinale = 0
+    } else if (trascorso < durataFaseRosa) {
+      progressoRosa = sin(HALF_PI * trascorso / durataFaseRosa)
+      scalaRosaFinale = 1
       rosaVisibile = true
-      scalaRosa = 1 + (scalaMassimaRosa - 1) * sin(PI * p)
+    } else if (trascorso < inizioRitiro) {
+      progressoRosa = 1
+      scalaRosaFinale = 1
+      rosaVisibile = true
+    } else if (trascorso < fineRitiro) {
+      progressoRosa = cos(HALF_PI * (trascorso - inizioRitiro) / durataFaseRosa)
+      scalaRosaFinale = 1
+      rosaVisibile = true
+    } else {
+      progressoRosa = 0
+      scalaRosaFinale = 1 - (trascorso - fineRitiro) / durataRiduzioneFinaleRosa
+      rosaVisibile = true
     }
   }
 
@@ -175,18 +293,32 @@ function aggiornaAnimazioni() {
     if (p >= 1) {
       inizioAzzurro = -1
       rotazioneAzzurro = 0
+      rettAzzurro.tinta = rettAzzurro.tintaBase
+      rettAzzurro.saturazione = rettAzzurro.saturazioneBase
+      rettAzzurro.luminosita = rettAzzurro.luminositaBase
     } else {
       rotazioneAzzurro = 360 * p
+      if (millis() - ultimoCambioColoreAzzurro >= intervalloColoreAzzurro) {
+        cambiaColoreAzzurro()
+        ultimoCambioColoreAzzurro = millis()
+      }
     }
   }
 
   if (inizioVerde >= 0) {
-    const p = (millis() - inizioVerde) / durataVerde
-    if (p >= 1) {
+    const trascorso = millis() - inizioVerde
+    const inizioRitiro = durataFaseVerde + pausaVerde
+    if (trascorso >= inizioRitiro + durataFaseVerde) {
       inizioVerde = -1
-      scalaVerde = 1
+      progressoVerde = 0
     } else {
-      scalaVerde = 1 + ampiezzaVerde * sin(PI * p)
+      if (trascorso < durataFaseVerde) {
+        progressoVerde = sin(HALF_PI * trascorso / durataFaseVerde)
+      } else if (trascorso < inizioRitiro) {
+        progressoVerde = 1
+      } else {
+        progressoVerde = cos(HALF_PI * (trascorso - inizioRitiro) / durataFaseVerde)
+      }
       if (millis() - ultimoCambioToni >= intervalloToni) {
         cambiaToni()
         ultimoCambioToni = millis()
@@ -209,14 +341,50 @@ function cambiaColoreBlu() {
   rettBlu.luminosita = nuovo.luminosita
 }
 
+function cambiaColoreAzzurro() {
+  const coloreBase = {
+    tinta: rettAzzurro.tintaBase,
+    saturazione: rettAzzurro.saturazioneBase,
+    luminosita: rettAzzurro.luminositaBase
+  }
+  const scelte = paletteColori.filter((colore) => {
+    return !stessoColore(colore, rettAzzurro) && !stessoColore(colore, coloreBase)
+  })
+  const nuovo = random(scelte.length > 0 ? scelte : paletteColori)
+  rettAzzurro.tinta = nuovo.tinta
+  rettAzzurro.saturazione = nuovo.saturazione
+  rettAzzurro.luminosita = nuovo.luminosita
+}
+
 function cambiaToni() {
   for (const r of rettangoli) {
-    const scelte = tintePalette.filter((tinta) => tinta !== r.tinta)
-    r.tinta = random(scelte)
+    const scelte = paletteColori.filter((colore) => !stessoColore(colore, r))
+    const nuovo = random(scelte.length > 0 ? scelte : paletteColori)
+    r.tinta = nuovo.tinta
+    r.saturazione = nuovo.saturazione
+    r.luminosita = nuovo.luminosita
   }
+
+  const sceltePannello = palettePannello.filter((colore) => {
+    return !stessoColore(colore, rettangoloGrigio)
+  })
+  const nuovoPannello = random(sceltePannello.length > 0 ? sceltePannello : palettePannello)
+  rettangoloGrigio.tinta = nuovoPannello.tinta
+  rettangoloGrigio.saturazione = nuovoPannello.saturazione
+  rettangoloGrigio.luminosita = nuovoPannello.luminosita
+}
+
+function stessoColore(a, b) {
+  return a.tinta === b.tinta &&
+    a.saturazione === b.saturazione &&
+    a.luminosita === b.luminosita
 }
 
 function resetta() {
+  rettangoloGrigio.tinta = tintaBaseRettangoloGrigio
+  rettangoloGrigio.saturazione = saturazioneBaseRettangoloGrigio
+  rettangoloGrigio.luminosita = luminositaBaseRettangoloGrigio
+
   for (const r of rettangoli) {
     r.tinta = r.tintaBase
     r.saturazione = r.saturazioneBase
@@ -225,20 +393,38 @@ function resetta() {
 
   inizioRosa = -1
   rosaVisibile = true
-  scalaRosa = 1
+  progressoRosa = 0
+  scalaRosaFinale = 1
   inizioAzzurro = -1
   rotazioneAzzurro = 0
+  ultimoCambioColoreAzzurro = 0
   inizioVerde = -1
-  scalaVerde = 1
+  progressoVerde = 0
   ultimoCambioToni = 0
-  formaPrecedente = ""
 }
 
-function formaSottoIlMouse() {
+function formaSottoIlMouse(px = mouseX, py = mouseY) {
   for (let i = rettangoli.length - 1; i >= 0; i--) {
     const r = rettangoli[i]
     if (r.nome === "rosa" && !rosaVisibile) continue
-    if (mouseX >= r.x && mouseX <= r.x + r.larghezza && mouseY >= r.y && mouseY <= r.y + r.altezza) {
+
+    const centroX = margineSinistro + (r.x + r.larghezza / 2) * scalaComposizione + r.spostamentoXCorrente
+    const centroY = margineSuperiore + (r.y + r.altezza / 2) * scalaComposizione + r.spostamentoYCorrente
+    const dx = px - centroX
+    const dy = py - centroY
+    const angolo = radians(r.rotazioneCorrente)
+    const coseno = Math.cos(angolo)
+    const seno = Math.sin(angolo)
+
+    // riporto il mouse nelle coordinate locali del rettangolo, annullando
+    // rotazione, scala e spostamento applicati in disegnaRettangolo()
+    const xLocale = (dx * coseno + dy * seno) / (scalaComposizione * r.scalaXCorrente)
+    const yLocale = (-dx * seno + dy * coseno) / (scalaComposizione * r.scalaYCorrente)
+
+    const mezzoLarghezza = r.larghezza / 2 + sovrapposizioneBordi
+    const mezzoAltezza = r.altezza / 2 + sovrapposizioneBordi
+    if (xLocale >= -mezzoLarghezza && xLocale <= mezzoLarghezza &&
+        yLocale >= -mezzoAltezza && yLocale <= mezzoAltezza) {
       return r.nome
     }
   }
