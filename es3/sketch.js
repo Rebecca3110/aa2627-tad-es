@@ -21,19 +21,23 @@ let font;
 let testo = " Il mondo intorno che sbiadisce, perde il suo colore.";
 let dimensioneTesto = 32;
 let parolaAnimata = "il mondo intorno";
-let fraseLuminosita = "che sbiadisce";
-let parolaCaduta = "perde";
-let fraseAttivatrice = "il suo colore";
+let fraseLuminosita = "che sbiadisce,";
+let parolaCaduta = "perde il";
+let fraseAttivatrice = "suo colore";
 let durataOrbita = 4000;
-let durataRitornoOrbita = 900;
-let durataLuminosita = 7000;
+let durataRaccordoOrbita = 2500;
+let durataSbiadimento = 7000;
+let durataBianco = 2000;
+let durataRiacquistoTono = 7000;
 let raggioOrbita = 60;
 let marginePuntatore = 8;
+let tintaMassimaArcobaleno = 270;
+let luminositaMinimaGrigio = 0;
+let luminositaMassimaGrigio = 90;
 let saturazioneColori = 85;
 let luminositaColori = 45;
-let velocitaMinima = 80;
-let velocitaMassima = 220;
-let ritardoMassimoRicomparsa = 0.7;
+let velocitaMinima = 20;
+let velocitaMassima = 320;
 let larghezzeCaratteri = [];
 let larghezzaRiga = 0;
 let indiceParola = -1;
@@ -44,13 +48,14 @@ let inizioAnimazione = 0;
 let animazioneAttiva = false;
 let inizioRitornoOrbita = 0;
 let ritornoOrbitaAttivo = false;
+let tempoFineOrbita = 0;
 let centroRitornoX = 0;
 let centroRitornoY = 0;
 let puntatoreSullaParola = false;
 let inizioLuminosita = 0;
 let luminositaAttiva = false;
 let puntatoreSullaFrase = false;
-let ritardiRicomparsa = [];
+let ritardiSbiadimento = [];
 let inizioCaduta = 0;
 let cadutaAttiva = false;
 let inizioRisalita = 0;
@@ -61,7 +66,8 @@ let velocitaRisalita = [];
 let durataCaduta = 0;
 let durataRisalita = 0;
 let coloriTesto = [];
-let coloriAttivi = false;
+let testoInScalaDiGrigi = false;
+let luminositaGrigiaTesto = 0;
 let puntatoreSullaFraseAttivatrice = false;
 
 async function setup() {
@@ -80,7 +86,15 @@ async function setup() {
     let larghezza = fontWidth(testo.charAt(i));
     larghezzeCaratteri.push(larghezza);
     larghezzaRiga += larghezza;
+    coloriTesto.push(tintaMassimaArcobaleno * i / (testo.length - 1));
   }
+}
+
+function coloreBaseTesto(indice) {
+  if (testoInScalaDiGrigi) {
+    return color(0, 0, luminositaGrigiaTesto);
+  }
+  return color(coloriTesto[indice], saturazioneColori, luminositaColori);
 }
 
 function draw() {
@@ -111,16 +125,17 @@ function draw() {
   puntatoreSullaParola = puntatoreDentro;
 
   let tempoOrbita = millis() - inizioAnimazione;
-  if (animazioneAttiva && tempoOrbita >= durataOrbita) {
+  if (animazioneAttiva && tempoOrbita >= durataRaccordoOrbita + durataOrbita) {
     animazioneAttiva = false;
     ritornoOrbitaAttivo = true;
     inizioRitornoOrbita = millis();
+    tempoFineOrbita = tempoOrbita;
     centroRitornoX = mouseX;
     centroRitornoY = mouseY;
   }
 
   let tempoRitornoOrbita = millis() - inizioRitornoOrbita;
-  if (ritornoOrbitaAttivo && tempoRitornoOrbita >= durataRitornoOrbita) {
+  if (ritornoOrbitaAttivo && tempoRitornoOrbita >= durataRaccordoOrbita) {
     ritornoOrbitaAttivo = false;
   }
 
@@ -142,21 +157,32 @@ function draw() {
   if (puntatoreDentroFrase && !puntatoreSullaFrase) {
     inizioLuminosita = millis();
     luminositaAttiva = true;
-    ritardiRicomparsa = [];
+    let ordineSbiadimento = [];
     for (let i = 0; i < fraseLuminosita.length; i++) {
-      ritardiRicomparsa.push(random(0, ritardoMassimoRicomparsa));
+      ordineSbiadimento.push(i);
+    }
+    // ogni lettera sbiadisce in un ordine casuale, una dopo l'altra
+    for (let i = ordineSbiadimento.length - 1; i > 0; i--) {
+      let indiceCasuale = floor(random(i + 1));
+      let indiceTemporaneo = ordineSbiadimento[i];
+      ordineSbiadimento[i] = ordineSbiadimento[indiceCasuale];
+      ordineSbiadimento[indiceCasuale] = indiceTemporaneo;
+    }
+
+    ritardiSbiadimento = [];
+    let durataSbiadimentoPerLettera = durataSbiadimento / fraseLuminosita.length;
+    for (let posizione = 0; posizione < ordineSbiadimento.length; posizione++) {
+      ritardiSbiadimento[ordineSbiadimento[posizione]] =
+        posizione * durataSbiadimentoPerLettera;
     }
   }
   puntatoreSullaFrase = puntatoreDentroFrase;
 
   let tempoLuminosita = millis() - inizioLuminosita;
-  if (luminositaAttiva && tempoLuminosita >= durataLuminosita) {
+  let durataTotaleLuminosita = durataSbiadimento + durataBianco + durataRiacquistoTono;
+  if (luminositaAttiva && tempoLuminosita >= durataTotaleLuminosita) {
     luminositaAttiva = false;
   }
-
-  let progressoSbiadimento = luminositaAttiva
-    ? tempoLuminosita / durataLuminosita
-    : 0;
 
   let xInizioParolaCaduta = xInizioRiga;
   for (let i = 0; i < indiceParolaCaduta; i++) {
@@ -222,11 +248,8 @@ function draw() {
     && mouseY <= yRiga + dimensioneTesto / 2 + marginePuntatore;
 
   if (puntatoreDentroFraseAttivatrice && !puntatoreSullaFraseAttivatrice) {
-    coloriTesto = [];
-    for (let i = 0; i < testo.length; i++) {
-      coloriTesto.push(random(360));
-    }
-    coloriAttivi = true;
+    luminositaGrigiaTesto = random(luminositaMinimaGrigio, luminositaMassimaGrigio);
+    testoInScalaDiGrigi = true;
   }
   puntatoreSullaFraseAttivatrice = puntatoreDentroFraseAttivatrice;
 
@@ -241,28 +264,33 @@ function draw() {
       && i < indiceParolaCaduta + parolaCaduta.length;
 
     if (faParteDellaFrase && luminositaAttiva) {
-      let coloreIniziale = coloriAttivi
-        ? color(coloriTesto[i], saturazioneColori, luminositaColori)
-        : color(0, 0, 0);
+      let coloreIniziale = coloreBaseTesto(i);
       let coloreBianco = color(0, 0, 100);
       let fattoreBianco;
-      if (progressoSbiadimento < 0.5) {
-        fattoreBianco = progressoSbiadimento * 2;
-      } else {
-        let posizioneRicomparsa = (progressoSbiadimento - 0.5) * 2;
-        let ritardo = ritardiRicomparsa[i - indiceFraseLuminosita];
-        let progressoRicomparsa = constrain(
-          (posizioneRicomparsa - ritardo) / (1 - ritardo),
+      if (tempoLuminosita < durataSbiadimento) {
+        let indiceNellaFrase = i - indiceFraseLuminosita;
+        let progressoLettera = constrain(
+          (tempoLuminosita - ritardiSbiadimento[indiceNellaFrase])
+            / (durataSbiadimento / fraseLuminosita.length),
           0,
           1
         );
-        fattoreBianco = 1 - progressoRicomparsa;
+        fattoreBianco = progressoLettera * progressoLettera
+          * (3 - 2 * progressoLettera);
+      } else if (tempoLuminosita < durataSbiadimento + durataBianco) {
+        fattoreBianco = 1;
+      } else {
+        let progressoRiacquisto = constrain(
+          (tempoLuminosita - durataSbiadimento - durataBianco)
+            / durataRiacquistoTono,
+          0,
+          1
+        );
+        fattoreBianco = 1 - progressoRiacquisto;
       }
       fill(lerpColor(coloreIniziale, coloreBianco, fattoreBianco));
-    } else if (coloriAttivi) {
-      fill(coloriTesto[i], saturazioneColori, luminositaColori);
     } else {
-      fill(0, 0, 0);
+      fill(coloreBaseTesto(i));
     }
 
     if ((cadutaAttiva || risalitaAttiva) && faParteDellaParolaCaduta) {
@@ -290,9 +318,7 @@ function draw() {
       }
 
       let xCaduta = x;
-      let coloreIniziale = coloriAttivi
-        ? color(coloriTesto[i], saturazioneColori, luminositaColori)
-        : color(0, 0, 0);
+      let coloreIniziale = coloreBaseTesto(i);
       let coloreBianco = color(0, 0, 100);
       fill(lerpColor(coloreIniziale, coloreBianco, schiarimento));
       text(carattere, xCaduta, yCaduta);
@@ -302,17 +328,25 @@ function draw() {
         + tempoOrbita / durataOrbita);
       let xOrbita = mouseX + cos(angolo) * raggioOrbita;
       let yOrbita = mouseY + sin(angolo) * raggioOrbita;
+      let progressoIngresso = constrain(tempoOrbita / durataRaccordoOrbita, 0, 1);
+      let raccordoIngresso = progressoIngresso * progressoIngresso
+        * (3 - 2 * progressoIngresso);
+      let xCentroRiga = x + larghezzeCaratteri[i] / 2;
+      let xIngresso = lerp(xCentroRiga, xOrbita, raccordoIngresso);
+      let yIngresso = lerp(yRiga, yOrbita, raccordoIngresso);
 
       push();
       textAlign(CENTER, CENTER);
-      text(carattere, xOrbita, yOrbita);
+      text(carattere, xIngresso, yIngresso);
       pop();
     } else if (ritornoOrbitaAttivo && faParteDellaParola) {
       let posizioneNellaParola = i - indiceParola;
-      let angoloFinale = TWO_PI * (posizioneNellaParola / parolaAnimata.length + 1);
+      let angoloFinale = TWO_PI * (
+        posizioneNellaParola / parolaAnimata.length + tempoFineOrbita / durataOrbita
+      );
       let xInizioRitorno = centroRitornoX + cos(angoloFinale) * raggioOrbita;
       let yInizioRitorno = centroRitornoY + sin(angoloFinale) * raggioOrbita;
-      let progresso = constrain(tempoRitornoOrbita / durataRitornoOrbita, 0, 1);
+      let progresso = constrain(tempoRitornoOrbita / durataRaccordoOrbita, 0, 1);
       let raccordo = progresso * progresso * (3 - 2 * progresso);
       let xCentroRiga = x + larghezzeCaratteri[i] / 2;
       let xRitorno = lerp(xInizioRitorno, xCentroRiga, raccordo);
