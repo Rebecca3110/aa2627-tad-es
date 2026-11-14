@@ -81,7 +81,7 @@ let rettangoli = [
   { nome: "verde scuro", tinta: 149, saturazione: 66, luminosita: 9, x: 319, y: 0, larghezza: 261, altezza: 43},
   { nome: "rosso", tinta: 5, saturazione: 69, luminosita: 46, x: 318, y: 43, larghezza: 262, altezza: 367 },
   { nome: "blu", tinta: 214, saturazione: 88, luminosita: 16, x: 19, y: 43, larghezza: 296, altezza: 249 },
-  { nome: "azzurro", tinta: 209, saturazione: 43, luminosita: 63, x: 19, y: 296, larghezza: 119, altezza: 183 },
+  { nome: "azzurro", tinta: 209, saturazione: 43, luminosita: 63, x: 19, y: 295, larghezza: 119, altezza: 183 },
   { nome: "verde", tinta: 147, saturazione: 23, luminosita: 38, x: 197, y: 413, larghezza: 358, altezza: 391 },
   { nome: "rosa", tinta: 14, saturazione: 79, luminosita: 87, x: 138, y: 252, larghezza: 263, altezza: 332 }
 ]
@@ -203,6 +203,15 @@ function draw() {
 
     disegnaRettangolo(r, scalaX, scalaY, rotazione, luce, spostamentoX, spostamentoY)
   }
+
+  const formaSottoIlCursore = formaSottoIlMouse()
+  const formaInterattiva = formaSottoIlCursore === "verde scuro" ||
+    formaSottoIlCursore === "blu" ||
+    (!animazioneInCorso() &&
+      (formaSottoIlCursore === "azzurro" ||
+       formaSottoIlCursore === "rosa" ||
+       formaSottoIlCursore === "verde"))
+  cursor(formaInterattiva ? "pointer" : "default")
 }
 
 function disegnaRettangolo(r, scalaX, scalaY, rotazione, luce, spostamentoX, spostamentoY) {
